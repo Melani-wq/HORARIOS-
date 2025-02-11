@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Resumen de Horas - {{ employee }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #FFFAF0; }
+        .container { max-width: 800px; margin-top: 30px; }
+        .card { background-color: #FFA500; color: white; }
+        .btn-orange { background-color: #FF8C00; color: white; }
+        .btn-orange:hover { background-color: #FF4500; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 class="text-center text-warning">Resumen de Horas de {{ employee }}</h2>
+
+    <div class="card p-4">
+        <h4 class="text-white">Total trabajado: {{ total }} horas</h4>
+        <h4 class="text-white">Total ganado: ${{ total_pago }}</h4>
+    </div>
+
+    <h3 class="mt-4 text-center text-dark">Detalle por Día</h3>
+    <table class="table table-bordered table-striped mt-3">
+        <thead class="table-warning">
+            <tr>
+                <th>Día</th>
+                <th>Hora de Entrada</th>
+                <th>Hora de Salida</th>
+                <th>Horas Trabajadas</th>
+                <th>Pago</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for day in days %}
+                {% if schedule.get(day) %}
+                    <tr>
+                        <td><strong>{{ day }}</strong></td>
+                        <td>{{ schedule[day]["entrada"] }}</td>
+                        <td>{{ schedule[day]["salida"] }}</td>
+                        <td>{{ schedule[day]["horas"] }}</td>
+                        <td class="text-success">${{ schedule[day]["pago"] }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td>{{ day }}</td>
+                        <td colspan="4" class="text-center text-muted">Sin registro</td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="text-center mt-3">
+        <a href="/" class="btn btn-secondary">Volver</a>
+    </div>
+</div>
+
+</body>
+</html>
