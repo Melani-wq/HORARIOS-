@@ -1,99 +1,84 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-from datetime import datetime
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registro de Horas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #FFFAF0; }
+        .container { max-width: 800px; margin-top: 30px; }
+        .card { background-color: #FFA500; color: white; }
+        .btn-orange { background-color: #FF8C00; color: white; }
+        .btn-orange:hover { background-color: #FF4500; }
+    </style>
+</head>
+<body>
 
-app = Flask(__name__)
-app.secret_key = "tu_clave_secreta"  # Requerido para usar flash messages
+<div class="container">
+    <h2 class="text-center text-warning">Registro de Horas Trabajadas</h2>
 
-# Tarifas por hora (modificables desde la interfaz)
-rate_per_hour = {"Lunes-Viernes": 1250, "Sábado": 1500}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-# Días de la semana que se considerarán
-days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+    <div class="card p-4">
+        <form action="/" method="post">
+            <label>Nombre del Trabajador</label>
+            <input type="text" class="form-control" name="employee" required>
 
-# Diccionario global para almacenar los registros diarios de cada empleado.
-schedules = {}
+            <label>Día</label>
+            <select class="form-control" name="day">
+                {% for day in days %}
+                    <option value="{{ day }}">{{ day }}</option>
+                {% endfor %}
+            </select>
 
-def format_hours(float_hours):
-    """
-    Convierte un número de horas en formato flotante a un string con formato H:MM,
-    redondeando los minutos.
-    """
-    total_minutes = round(float_hours * 60)  # redondea el total de minutos
-    hours = total_minutes // 60
-    minutes = total_minutes % 60
-    return f"{hours}:{minutes:02d}"
+            <label>Hora de Entrada</label>
+            <input type="time" class="form-control" name="entrada" required>
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    if request.method == "POST":
-        employee = request.form.get("employee", "").strip()
-        day = request.form.get("day", "")
-        entrada_str = request.form.get("entrada", "")
-        salida_str = request.form.get("salida", "")
+            <label>Hora de Salida</label>
+            <input type="time" class="form-control" name="salida" required>
 
-        if not employee:
-            flash("Por favor, ingrese el nombre del empleado.", "error")
-            return redirect(url_for("index"))
-        if day not in days:
-            flash("Seleccione un día válido.", "error")
-            return redirect(url_for("index"))
+            <button type="submit" class="btn btn-orange w-100 mt-3">Guardar Horario</button>
+        </form>
+    </div>
 
-        # Se valida que se hayan ingresado ambos horarios
-        if entrada_str and salida_str:
-            try:
-                entrada = datetime.strptime(entrada_str, "%H:%M")
-                salida = datetime.strptime(salida_str, "%H:%M")
-                if salida <= entrada:
-                    flash(f"En {day}, la hora de salida debe ser mayor que la de entrada.", "error")
-                    return redirect(url_for("index"))
-                diff_seconds = (salida - entrada).seconds
-                hours_float = diff_seconds / 3600.0
-            except ValueError:
-                flash(f"Formato de hora inválido en {day}. Use el formato HH:MM.", "error")
-                return redirect(url_for("index"))
-        else:
-            flash("Debe ingresar ambas horas: entrada y salida.", "error")
-            return redirect(url_for("index"))
+    <h3 class="mt-4 text-center text-dark">Horarios Guardados</h3>
+    {% if schedules %}
+        <table class="table table-bordered table-striped">
+            <thead class="table-warning">
+                <tr>
+                    <th>Empleado</th>
+                    {% for day in days %} <th>{{ day }}</th> {% endfor %}
+                    <th>Total Semanal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for employee, schedule in schedules.items() %}
+                    <tr>
+                        <td>{{ employee }}</td>
+                        {% for day in days %}
+                            <td>
+                                {% if schedule.get(day) %}
+                                    {{ schedule[day]["horas"] }} hrs<br>
+                                    <span class="text-success">${{ schedule[day]["pago"] }}</span>
+                                {% else %} - {% endif %}
+                            </td>
+                        {% endfor %}
+                        <td><a href="{{ url_for('resumen_empleado', employee=employee) }}" class="btn btn-sm btn-info">Ver Total</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="text-center mt-3 text-danger">No hay registros aún.</p>
+    {% endif %}
+</div>
 
-        # Si el empleado no existe en el diccionario, se crea su registro
-        if employee not in schedules:
-            schedules[employee] = {}
-
-        tarifa = rate_per_hour["Sábado"] if day == "Sábado" else rate_per_hour["Lunes-Viernes"]
-        pago_dia = round(hours_float * tarifa, 2)
-
-        schedules[employee][day] = {
-            "entrada": entrada_str,
-            "salida": salida_str,
-            "horas_float": hours_float,
-            "horas": format_hours(hours_float),
-            "pago": pago_dia
-        }
-        flash(f"Registro guardado para {employee} en {day}: {format_hours(hours_float)} horas, Gana: ${pago_dia}", "success")
-        return redirect(url_for("index"))
-    
-    return render_template("index.html", schedules=schedules, days=days, rate_per_hour=rate_per_hour)
-
-@app.route("/resumen/<employee>")
-def resumen_empleado(employee):
-    if employee not in schedules:
-        flash("Empleado no encontrado.", "error")
-        return redirect(url_for("index"))
-    
-    employee_schedule = schedules[employee]
-    total_float = sum(employee_schedule[day]["horas_float"] for day in employee_schedule)
-    total_pago = sum(employee_schedule[day]["pago"] for day in employee_schedule)
-    total_formatted = format_hours(total_float)
-    
-    return render_template("resumen_empleado.html", employee=employee, schedule=employee_schedule, total=total_formatted, total_pago=total_pago, days=days)
-
-@app.route("/update_rate", methods=["POST"])
-def update_rate():
-    rate_per_hour["Lunes-Viernes"] = int(request.form.get("rate_week", 1250))
-    rate_per_hour["Sábado"] = int(request.form.get("rate_saturday", 1500))
-    flash("Tarifas actualizadas correctamente.", "success")
-    return redirect(url_for("index"))
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
-
+</body>
+</html>
