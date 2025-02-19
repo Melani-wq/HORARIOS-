@@ -1,40 +1,51 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Resumen de Horas - {{ employee }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen de Empleados</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 <body>
+    <div class="container mt-4">
+        <h1 class="text-center">Resumen de Empleados</h1>
+        
+        {% if schedules %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Empleado</th>
+                        <th>Total Horas</th>
+                        <th>Total Pago ($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for employee, schedule in schedules.items() %}
+                        <tr>
+                            <td>{{ employee }}</td>
+                            <td>
+                                {% set total_horas = 0 %}
+                                {% for day, data in schedule.items() %}
+                                    {% if day != "total" %}
+                                        {% set total_horas = total_horas + data["horas"] %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ total_horas }}
+                            </td>
+                            <td>
+                                ${{ schedule["total"] if "total" in schedule else 0 }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="text-danger text-center">No hay registros disponibles.</p>
+        {% endif %}
 
-<div class="container">
-    <h2 class="text-center text-warning">Resumen de Horas de {{ employee }}</h2>
-
-    <div class="card p-4">
-        <h4>Total trabajado: {{ total }} horas</h4>
-        <h4>Total ganado: ${{ total_pago }}</h4>
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-primary">Volver al Registro</a>
+        </div>
     </div>
-
-    <h3 class="mt-4 text-center text-dark">Detalle por Día</h3>
-    <table class="table table-bordered">
-        <tr>
-            <th>Día</th> <th>Entrada</th> <th>Salida</th> <th>Horas</th> <th>Pago</th>
-        </tr>
-        {% for day in days %}
-            <tr>
-                <td>{{ day }}</td>
-                <td>{{ schedule.get(day, {}).get("entrada", "-") }}</td>
-                <td>{{ schedule.get(day, {}).get("salida", "-") }}</td>
-                <td>{{ schedule.get(day, {}).get("horas", "-") }}</td>
-                <td>${{ schedule.get(day, {}).get("pago", "-") }}</td>
-            </tr>
-        {% endfor %}
-    </table>
-
-    <a href="/" class="btn btn-secondary mt-3">Volver</a>
-</div>
-
 </body>
 </html>
