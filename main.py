@@ -6,7 +6,7 @@ app.secret_key = "secreto"
 
 # Diccionario para almacenar horarios y tarifas
 schedules = {}
-rate_per_hour = {"Lunes-Viernes": 1250, "Sábado": 1500}
+rate_per_hour = {"Lunes-Viernes": 1500, "Sábado": 1500}
 days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
 
 @app.route("/", methods=["GET", "POST"])
